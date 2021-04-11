@@ -530,7 +530,9 @@ freq0+=1;
 }
 else{i=1;}
 }
-if (freq0 > 255){freq1+=1;freq0-=256;}
+
+// freq0 is 1 byte, cannot be larger than 255
+//if (freq0 > 255){freq1+=1;freq0-=256;}
 
 SpiWriteReg(CC1101_FREQ2, freq2);
 SpiWriteReg(CC1101_FREQ1, freq1);
@@ -980,7 +982,6 @@ int calc = SpiReadStatus(19);
 m1FEC = 0;
 m1PRE = 0;
 m1CHSP = 0;
-int s2 = 0;
 for (bool i = 0; i==0;){
 if (calc >= 128){calc-=128; m1FEC+=128;}
 else if (calc >= 16){calc-=16; m1PRE+=16;}
