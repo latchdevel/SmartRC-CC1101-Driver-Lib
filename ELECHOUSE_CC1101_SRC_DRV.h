@@ -5,8 +5,8 @@
     Version: November 12, 2010
 
   This library is designed to use CC1101/CC1100 module on Arduino platform.
-  CC1101/CC1100 module is an useful wireless module.Using the functions of the 
-  library, you can easily send and receive data by the CC1101/CC1100 module. 
+  CC1101/CC1100 module is an useful wireless module.Using the functions of the
+  library, you can easily send and receive data by the CC1101/CC1100 module.
   Just have fun!
   For the details, please refer to the datasheet of CC1100/CC1101.
 ----------------------------------------------------------------------------------------------------------------
@@ -16,7 +16,12 @@ cc1101 Driver for RC Switch. Mod by Little Satan. With permission to modify and 
 #ifndef ELECHOUSE_CC1101_SRC_DRV_h
 #define ELECHOUSE_CC1101_SRC_DRV_h
 
+#ifdef RASPBERRY
+#include <stdint.h>
+typedef uint8_t byte;
+#else
 #include <Arduino.h>
+#endif
 
 //***************************************CC1101 define**************************************************//
 // CC1101 CONFIG REGSITER

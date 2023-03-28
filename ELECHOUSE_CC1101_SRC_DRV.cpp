@@ -13,9 +13,24 @@
 cc1101 Driver for RC Switch. Mod by Little Satan. With permission to modify and publish Wilson Shen (ELECHOUSE).
 ----------------------------------------------------------------------------------------------------------------
 */
-#include <SPI.h>
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
+
+#ifdef RASPBERRY
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <wiringPi.h>
+#include <wiringPiSPI.h>
+#define bitRead(value, bit) (((value) >> (bit)) & 0x01)
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+#else
 #include <Arduino.h>
+#include <SPI.h>
+#endif
 
 /****************************************************************/
 #define   WRITE_BURST       0x40            //write burst
@@ -86,14 +101,17 @@ uint8_t PA_TABLE_915[10] {0x03,0x0E,0x1E,0x27,0x38,0x8E,0x84,0xCC,0xC3,0xC0,};  
 void ELECHOUSE_CC1101::SpiStart(void)
 {
   // initialize the SPI pins
+  #ifndef RASPBERRY
   pinMode(SCK_PIN, OUTPUT);
   pinMode(MOSI_PIN, OUTPUT);
   pinMode(MISO_PIN, INPUT);
+  #endif
   pinMode(SS_PIN, OUTPUT);
 
   // enable SPI
   #ifdef ESP32
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);
+  #elif RASPBERRY
   #else
   SPI.begin();
   #endif
@@ -106,9 +124,11 @@ void ELECHOUSE_CC1101::SpiStart(void)
 ****************************************************************/
 void ELECHOUSE_CC1101::SpiEnd(void)
 {
+  #ifndef RASPBERRY
   // disable SPI
   SPI.endTransaction();
   SPI.end();
+  #endif
 }
 /****************************************************************
 *FUNCTION NAME: GDO_Set()
@@ -144,9 +164,16 @@ void ELECHOUSE_CC1101::Reset (void)
 	digitalWrite(SS_PIN, HIGH);
 	delay(1);
 	digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t tbuf[1] = {0};
+  tbuf[0] = CC1101_SRES;
+  uint8_t len = 1;
+  wiringPiSPIDataRW(0, tbuf, len);
+#else
 	while(digitalRead(MISO_PIN));
   SPI.transfer(CC1101_SRES);
   while(digitalRead(MISO_PIN));
+#endif
 	digitalWrite(SS_PIN, HIGH);
 }
 /****************************************************************
@@ -160,8 +187,10 @@ void ELECHOUSE_CC1101::Init(void)
   setSpi();
   SpiStart();                   //spi initialization
   digitalWrite(SS_PIN, HIGH);
+#ifndef RASPBERRY
   digitalWrite(SCK_PIN, HIGH);
   digitalWrite(MOSI_PIN, LOW);
+#endif
   Reset();                    //CC1101 reset
   RegConfigSettings();            //CC1101 register config
   SpiEnd();
@@ -176,9 +205,17 @@ void ELECHOUSE_CC1101::SpiWriteReg(byte addr, byte value)
 {
   SpiStart();
   digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t tbuf[2] = {0};
+  tbuf[0] = addr;
+  tbuf[1] = value;
+  uint8_t len = 2;
+  wiringPiSPIDataRW(0, tbuf, len);
+#else
   while(digitalRead(MISO_PIN));
   SPI.transfer(addr);
   SPI.transfer(value);
+#endif
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
 }
@@ -194,12 +231,23 @@ void ELECHOUSE_CC1101::SpiWriteBurstReg(byte addr, byte *buffer, byte num)
   SpiStart();
   temp = addr | WRITE_BURST;
   digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t tbuf[num + 1];
+  tbuf[0] = temp;
+  for (i = 0; i < num; i++)
+  {
+    tbuf[i + 1] = buffer[i];
+    //printf("SPI_arr_write: 0x%02X\n", tbuf[i+1]);
+  }
+  wiringPiSPIDataRW(0, tbuf, num + 1);
+#else
   while(digitalRead(MISO_PIN));
   SPI.transfer(temp);
   for (i = 0; i < num; i++)
   {
   SPI.transfer(buffer[i]);
   }
+#endif
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
 }
@@ -213,8 +261,15 @@ void ELECHOUSE_CC1101::SpiStrobe(byte strobe)
 {
   SpiStart();
   digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t tbuf[1] = {0};
+  tbuf[0] = strobe;
+  //printf("SPI_data: 0x%02X\n", tbuf[0]);
+  wiringPiSPIDataRW(0, tbuf, 1);
+#else
   while(digitalRead(MISO_PIN));
   SPI.transfer(strobe);
+#endif
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
 }
@@ -230,9 +285,19 @@ byte ELECHOUSE_CC1101::SpiReadReg(byte addr)
   SpiStart();
   temp = addr| READ_SINGLE;
   digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t rbuf[2] = {0};
+  rbuf[0] = temp;
+  uint8_t len = 2;
+  wiringPiSPIDataRW(0, rbuf, len);
+  //printf("SPI_arr_0: 0x%02X\n", rbuf[0]);
+  //printf("SPI_arr_1: 0x%02X\n", rbuf[1]);
+  value = rbuf[1];
+#else
   while(digitalRead(MISO_PIN));
   SPI.transfer(temp);
   value=SPI.transfer(0);
+#endif
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
   return value;
@@ -250,12 +315,23 @@ void ELECHOUSE_CC1101::SpiReadBurstReg(byte addr, byte *buffer, byte num)
   SpiStart();
   temp = addr | READ_BURST;
   digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t rbuf[num + 1] = {0};
+  rbuf[0] = temp;
+  wiringPiSPIDataRW(0, rbuf, num + 1);
+  for (i = 0; i < num; i++)
+  {
+    buffer[i] = rbuf[i + 1];
+    //printf("SPI_arr_read: 0x%02X\n", pArr[i]);
+  }
+#else
   while(digitalRead(MISO_PIN));
   SPI.transfer(temp);
   for(i=0;i<num;i++)
   {
   buffer[i]=SPI.transfer(0);
   }
+#endif
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
 }
@@ -272,9 +348,19 @@ byte ELECHOUSE_CC1101::SpiReadStatus(byte addr)
   SpiStart();
   temp = addr | READ_BURST;
   digitalWrite(SS_PIN, LOW);
+#ifdef RASPBERRY
+  uint8_t rbuf[2] = {0};
+  rbuf[0] = temp;
+  uint8_t len = 2;
+  wiringPiSPIDataRW(0, rbuf, len);
+  value = rbuf[1];
+//printf("SPI_arr_0: 0x%02X\n", rbuf[0]);
+//printf("SPI_arr_1: 0x%02X\n", rbuf[1]);
+#else
   while(digitalRead(MISO_PIN));
   SPI.transfer(temp);
   value=SPI.transfer(0);
+#endif
   digitalWrite(SS_PIN, HIGH);
   SpiEnd();
   return value;
@@ -295,6 +381,8 @@ void ELECHOUSE_CC1101::setSpi(void){
   SCK_PIN = 14; MISO_PIN = 12; MOSI_PIN = 13; SS_PIN = 15;
   #elif ESP32
   SCK_PIN = 18; MISO_PIN = 19; MOSI_PIN = 23; SS_PIN = 5;
+  #elif RASPBERRY
+  SS_PIN = 10;
   #else
   SCK_PIN = 13; MISO_PIN = 12; MOSI_PIN = 11; SS_PIN = 10;
   #endif
@@ -308,9 +396,11 @@ void ELECHOUSE_CC1101::setSpi(void){
 ****************************************************************/
 void ELECHOUSE_CC1101::setSpiPin(byte sck, byte miso, byte mosi, byte ss){
   spi = 1;
+#ifndef RASPBERRY
   SCK_PIN = sck;
   MISO_PIN = miso;
   MOSI_PIN = mosi;
+#endif
   SS_PIN = ss;
 }
 /****************************************************************
