@@ -74,7 +74,7 @@ jobs:
       # We use the "arduino/setup-arduino-cli" action to install and
       # configure the Arduino CLI on the system.
       - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v1.1.1
+        uses: arduino/setup-arduino-cli@v1.1.2
 
       # We then install the platform, which one will be determined
       # dynamically by the build matrix.
@@ -87,7 +87,7 @@ jobs:
       # First of all, we clone the repo using the "checkout" action.
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Install ESPiLight library from Arduino library manager.
       # Current version v0.17.0 not work on ESP8266 v3.x.x framework.
