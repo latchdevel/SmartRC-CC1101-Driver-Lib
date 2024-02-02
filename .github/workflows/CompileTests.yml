@@ -103,10 +103,10 @@ jobs:
         run: |
           git clone --branch protocollessreceiver https://github.com/Martin-Laclaustra/rc-switch.git libs/rc-switch
           
-      # Install RemoteSensor library from directory repo using svn command from Apache Subversion.
+      # Install RemoteSensor library from @mattwire cloned repo.
       - name: Install RemoteSensor custom library 
         run: |
-          svn export https://github.com/mattwire/arduino-dev/trunk/libraries/RemoteSensor libs/RemoteSensor
+          git clone https://github.com/latchdevel/RemoteSensor.git libs/RemoteSensor
 
       # Install NewRemoteSwitch from repo. Commit c3ca4cb (Sep 19, 2021) or later, required.
       - name: Install NewRemoteSwitch custom library 
