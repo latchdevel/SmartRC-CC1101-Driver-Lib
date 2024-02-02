@@ -136,7 +136,7 @@ jobs:
               || { errors+=($sketch) ; echo -e "\033[31;1;4mERROR COMPILING SKETCH: $sketch_path\033[0m\r\n" ;} \
             ;}
           done
-          echo ::set-output name=errors::${errors[@]}
+          echo "errors=${errors[@]}" >> $GITHUB_OUTPUT
 
       # Show errors
       - name: Show errors
