@@ -194,4 +194,6 @@ public:
   bool CheckRxFifo(int t);
 };
 
+extern ELECHOUSE_CC1101 ELECHOUSE_cc1101;
+
 #endif
