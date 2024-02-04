@@ -15,6 +15,8 @@ cc1101 Driver for RC Switch. Mod by Little Satan. With permission to modify and 
 */
 #include "ELECHOUSE_CC1101_SRC_DRV.h"
 
+ELECHOUSE_CC1101 ELECHOUSE_cc1101;
+
 #ifdef RASPBERRY
 #include <stdint.h>
 #include <stdio.h>
